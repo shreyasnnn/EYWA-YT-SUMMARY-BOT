@@ -28,7 +28,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 // ============================
 bot.start(async (ctx) => {
   await ctx.reply(
-    "👋 Welcome!\n\nSend a YouTube link to generate a structured summary.\n\nCommands:\n/actionpoints\n/deepdive\n/language english | kannada"
+    "👋 Welcome!\n\nSend a YouTube link to generate a structured summary.\n\nCommands:\n/actionpoints\n/deepdive\n/language english | kannada | hindi"
   );
 });
 
