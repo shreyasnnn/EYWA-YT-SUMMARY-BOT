@@ -41,6 +41,7 @@ Follow these steps to experience the full feature set of the assistant:
 4. **Localization:** Switch the output language dynamically:
    * `/language kannada`
    * `/language english`
+   * `/language Hindi`
 5. **Contextual Q&A:** Ask any specific question related to the video content (e.g., *"What was the main conclusion?"*). The bot will answer based strictly on the transcript.
 
 ---
@@ -197,3 +198,4 @@ node src/index.js
 ## Author
 
 **Shreyas N** *Information Science & Engineering Student* [LinkedIn](https://www.linkedin.com/in/shreyas-n-4837a2257/) | [GitHub](https://github.com/shreyasnnn)
+
