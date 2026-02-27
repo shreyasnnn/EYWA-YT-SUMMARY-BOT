@@ -1,24 +1,43 @@
 const { runOpenClaw } = require("../utils/openclawClient");
 
-async function generateSummary(transcriptText) {
+async function generateSummary(transcript) {
+
   const prompt = `
-You are an AI research assistant.
+You are generating a PREMIUM TELEGRAM REPORT.
 
-Create a structured summary of the video transcript below.
+You MUST follow this structure EXACTLY.
 
-Include:
-- 🎥 Video Title (infer if possible)
-- 📌 5 Key Points
-- ⏱ Important Timestamps
-- 🧠 Core Takeaway
+FORMAT RULES (MANDATORY):
 
-Rules:
-- Use only transcript content
-- Be concise
-- Do not hallucinate
+1. Start with:
+🎥 **VIDEO SUMMARY**
+
+2. Insert this divider EXACTLY between sections:
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+
+3. Sections (in order):
+
+🎥 **VIDEO TITLE**
+📌 **KEY INSIGHTS**
+⏱ **IMPORTANT MOMENTS**
+🧠 **CORE TAKEAWAY**
+
+4. Use 🔹 for bullet points.
+5. Extract 3–5 timestamps in MM:SS format.
+6. Bold important keywords.
+7. Add double line breaks between sections.
+8. Final takeaway must be:
+
+> 🧠 **Core Takeaway:** sentence here.
+
+9. NO introduction text.
+10. NO conclusion text.
+11. DO NOT add recommendations.
 
 Transcript:
-${transcriptText}
+${transcript}
+
+Generate report now:
 `;
 
   return await runOpenClaw(prompt);

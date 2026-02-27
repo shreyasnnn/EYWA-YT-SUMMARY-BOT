@@ -11,6 +11,8 @@ const { translate } = require("../services/languageService");
 const { generateActionPoints } = require("../services/actionService");
 const { generateDeepDive } = require("../services/deepDiveService");
 
+const { escapeMarkdown } = require("../utils/telegramFormatter");
+
 const { getCached, setCached } = require("../storage/cacheStore");
 
 const {
@@ -21,18 +23,14 @@ const {
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-
-
 // ============================
 // START COMMAND
 // ============================
 bot.start(async (ctx) => {
   await ctx.reply(
-    "👋 Welcome!\n\nSend a YouTube link to generate a structured summary.\n\nAfter summary, you can ask follow-up questions.\n\nCommands:\n/actionpoints\n/deepdive\n/language english | kannada"
+    "👋 Welcome!\n\nSend a YouTube link to generate a structured summary.\n\nCommands:\n/actionpoints\n/deepdive\n/language english | kannada"
   );
 });
-
-
 
 // ============================
 // LANGUAGE COMMAND
@@ -49,8 +47,6 @@ bot.command("language", async (ctx) => {
   await ctx.reply(`🌐 Responses will now be in ${lang}`);
 });
 
-
-
 // ============================
 // ACTION POINTS
 // ============================
@@ -65,24 +61,24 @@ bot.command("actionpoints", async (ctx) => {
 
   (async () => {
     try {
-      const result = await generateActionPoints(
-        session.transcriptChunks
-      );
+      const result = await generateActionPoints(session.transcriptChunks);
 
-      const final = await translate(
+      const translated = await translate(
         result,
         session.language || "english"
       );
 
-      await ctx.reply(final);
+      await ctx.reply(
+        escapeMarkdown(translated),
+        { parse_mode: "Markdown", disable_web_page_preview: true }
+      );
+
     } catch (err) {
       console.error("ACTIONPOINTS ERROR:", err);
       await ctx.reply("❌ Failed to generate action points.");
     }
   })();
 });
-
-
 
 // ============================
 // DEEP DIVE
@@ -98,16 +94,18 @@ bot.command("deepdive", async (ctx) => {
 
   (async () => {
     try {
-      const result = await generateDeepDive(
-        session.transcriptChunks
-      );
+      const result = await generateDeepDive(session.transcriptChunks);
 
-      const final = await translate(
+      const translated = await translate(
         result,
         session.language || "english"
       );
 
-      await ctx.reply(final);
+      await ctx.reply(
+        escapeMarkdown(translated),
+        { parse_mode: "Markdown", disable_web_page_preview: true }
+      );
+
     } catch (err) {
       console.error("DEEPDIVE ERROR:", err);
       await ctx.reply("❌ Failed to generate deep explanation.");
@@ -115,17 +113,17 @@ bot.command("deepdive", async (ctx) => {
   })();
 });
 
-
-
 // ============================
 // MAIN TEXT HANDLER
 // ============================
 bot.on("text", async (ctx) => {
+
   const text = ctx.message.text;
   const chatId = ctx.chat.id;
 
   // ---------- YOUTUBE LINK ----------
   if (text.includes("youtube.com") || text.includes("youtu.be")) {
+
     await ctx.reply("📥 Processing video...\nThis may take up to 1 minute.");
 
     processVideo(text, chatId, ctx).catch((err) => {
@@ -147,27 +145,30 @@ bot.on("text", async (ctx) => {
 
   (async () => {
     try {
+
       const answer = await answerQuestion(
         text,
         session.transcriptChunks
       );
 
-      const shortAnswer = answer.slice(0, 600);
+      const shortAnswer = answer.slice(0, 1000);
 
-      const finalAnswer = await translate(
+      const translated = await translate(
         shortAnswer,
         session.language || "english"
       );
 
-      await ctx.reply(finalAnswer);
+      await ctx.reply(
+        escapeMarkdown(translated),
+        { parse_mode: "Markdown", disable_web_page_preview: true }
+      );
+
     } catch (err) {
       console.error("QA ERROR:", err);
       await ctx.reply("❌ Failed to answer question.");
     }
   })();
 });
-
-
 
 // ============================
 // VIDEO PROCESSING
@@ -183,11 +184,11 @@ async function processVideo(url, chatId, ctx) {
   const existing = getSession(chatId);
   const currentLanguage = existing?.language || "english";
 
-
   // ---------- CACHE CHECK ----------
   const cached = getCached(videoId);
 
   if (cached) {
+
     await ctx.reply("⚡ Using cached summary.");
 
     setSession(chatId, {
@@ -200,9 +201,11 @@ async function processVideo(url, chatId, ctx) {
       currentLanguage
     );
 
-    return ctx.reply(translated);
+    return ctx.reply(
+      escapeMarkdown(translated),
+      { parse_mode: "Markdown", disable_web_page_preview: true }
+    );
   }
-
 
   // ---------- FETCH TRANSCRIPT ----------
   const transcriptData = await fetchTranscript(videoId);
@@ -210,7 +213,6 @@ async function processVideo(url, chatId, ctx) {
   if (!transcriptData || transcriptData.length === 0) {
     return ctx.reply("❌ Transcript not available for this video.");
   }
-
 
   // ---------- CHUNKING ----------
   const chunkSize = 1200;
@@ -229,12 +231,19 @@ async function processVideo(url, chatId, ctx) {
     chunks.push(current);
   }
 
-
   // ---------- SUMMARY ----------
-  const fullText = transcriptData.map(t => t.text).join(" ");
+  const fullText = transcriptData
+  .map(t => {
+    const minutes = Math.floor(t.start / 60);
+    const seconds = Math.floor(t.start % 60)
+      .toString()
+      .padStart(2, "0");
+
+    return `[${minutes}:${seconds}] ${t.text}`;
+  })
+  .join("\n");
 
   const summary = await generateSummary(fullText);
-
 
   // ---------- CACHE ----------
   setCached(videoId, {
@@ -242,19 +251,18 @@ async function processVideo(url, chatId, ctx) {
     chunks,
   });
 
-
   // ---------- SESSION ----------
   setSession(chatId, {
     transcriptChunks: chunks,
     language: currentLanguage,
   });
 
+  const translated = await translate(summary, currentLanguage);
 
-  const finalSummary = await translate(summary, currentLanguage);
-
-  await ctx.reply(finalSummary);
+  await ctx.reply(
+    escapeMarkdown(translated),
+    { parse_mode: "Markdown", disable_web_page_preview: true }
+  );
 }
-
-
 
 module.exports = bot;

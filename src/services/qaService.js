@@ -33,30 +33,27 @@ function retrieveRelevantChunks(question, chunks) {
 // QA FUNCTION
 // --------------------
 async function answerQuestion(question, transcriptChunks) {
+
   const context = retrieveRelevantChunks(question, transcriptChunks);
 
   const prompt = `
-You are answering questions about a YouTube video.
+You are an AI research assistant answering questions from a YouTube transcript.
 
 STRICT RULES:
 - Answer ONLY using the transcript context below.
 - If the answer is NOT explicitly mentioned, reply EXACTLY:
 "This topic is not covered in the video."
+- Do NOT introduce yourself.
 - Do NOT roleplay.
-- Do NOT introduce yourself.
-- Do NOT repeat instructions.
-- Be direct and factual.
-- Use clear simple English sentences.
-- Avoid complex phrasing.
-- Explain clearly in 3–4 sentences.
-- Do not copy large blocks verbatim.
-- Answer in clear simple English.
-- Answer ONLY using the transcript context below.
 - Maximum 4 sentences.
-- Be concise.
-- If the answer is NOT explicitly mentioned, reply EXACTLY:
-"This topic is not covered in the video."
-- Do NOT introduce yourself.
+- Clear simple English.
+- Concise and factual.
+
+FORMAT RULES:
+- Start with 📑 **ANSWER**
+- Insert divider: ▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+- Use 🔹 bullet points if needed.
+- Bold important keywords.
 
 Transcript Context:
 ${context}
